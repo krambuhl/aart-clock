@@ -1,0 +1,38 @@
+checkins = []
+sessions = []
+revisions = []
+
+[meta]
+schema_version = 1
+title = "Aart Clock"
+slug = "2026-06-09-aart-clock"
+started = "2026-06-09"
+status = "active"
+strategy = "interactive"
+
+[config]
+base_branch = "main"
+reviewers = []
+labels = []
+verification = []
+worker_bindings = {}
+
+[[phases]]
+number = 1
+name = "Phase 1"
+status = "not-started"
+
+[[events]]
+at = "2026-06-09T06:11:15.027Z"
+event = "project-initialized"
+detail = {}
+
+[[events]]
+at = "2026-06-09T06:11:15.027Z"
+event = "research-started"
+detail = { slug = "2026-06-09-aart-clock", topic = "aart-clock" }
+
+[[events]]
+at = "2026-06-09T06:11:15.057Z"
+event = "research-completed"
+detail = { slug = "2026-06-09-aart-clock", research_path = "RESEARCH.md", notes_path = "RESEARCH-NOTES.md" }
