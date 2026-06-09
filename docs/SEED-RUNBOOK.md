@@ -14,7 +14,7 @@ Determined empirically against TouchDesigner 099.2023.12480 via the MCP bridge (
 
 ### In `seed.toe` (manual, not scripted)
 
-- The MCP bridge component **`mcp_webserver_base.tox`** at `/project1/mcp_webserver_base`, imported from the vendored `touchdesigner-mcp-td/` directory **with its folder structure preserved** (the `.tox` references `modules/` by relative path; moving files breaks it).
+- The MCP bridge component **`mcp_webserver_base.tox`** at `/project1/mcp_webserver_base`, imported from the vendored `plugins/touchdesigner-mcp-td/` directory **with its folder structure preserved** (the `.tox` references `modules/` by relative path; moving files breaks it).
 
 That is the entire seed. Nothing else.
 
@@ -44,24 +44,24 @@ Everything aart-clock:
 
 ## Building `seed.toe`
 
-Prerequisites: TouchDesigner **099.2023.12480** and the vendored bridge at `touchdesigner-mcp-td/` (already in this repo).
+Prerequisites: TouchDesigner **099.2023.12480** and the vendored bridge at `plugins/touchdesigner-mcp-td/` (already in this repo).
 
 1. Launch TouchDesigner and start a new, empty project.
 2. In `/project1`, remove any default operators so the network is empty.
-3. Import the bridge: drag `touchdesigner-mcp-td/mcp_webserver_base.tox` into `/project1` so it lands at `/project1/mcp_webserver_base`. Do **not** move or rename anything inside `touchdesigner-mcp-td/` — the `.tox` resolves `modules/` by relative path.
+3. Import the bridge: drag `plugins/touchdesigner-mcp-td/mcp_webserver_base.tox` into `/project1` so it lands at `/project1/mcp_webserver_base`. Do **not** move or rename anything inside `plugins/touchdesigner-mcp-td/` — the `.tox` resolves `modules/` by relative path.
 4. Confirm the bridge is live: open the Textport (Alt+T) and verify the WebServer DAT is listening on `http://127.0.0.1:9981`.
-5. Save the project as `seed.toe` at the repository root.
-6. Commit `seed.toe`.
+5. Save the project as `dev/seed.toe`.
+6. Commit `dev/seed.toe`.
 
 `seed.toe` should contain exactly one operator of consequence: `/project1/mcp_webserver_base`.
 
 ## Producing `template.toe` from the seed
 
-1. Open `seed.toe` and connect the MCP server (see `docs/installation` for the bridge; the MCP client config is the project's responsibility, not the seed's).
-2. Run `build/bootstrap.py` through the bridge. It constructs `/project1/aart_clock` and the module template.
-3. Save the result as `template.toe` at the repository root and commit it.
+1. Open `dev/seed.toe` and connect the MCP server (the MCP client config is the project's responsibility, not the seed's).
+2. Run `plugins/aart-clock-td/build/bootstrap.py` through the bridge. It constructs `/project1/aart_clock` and the module template.
+3. Save the result as `dev/template.toe` and commit it.
 
-`template.toe` is a regenerated artifact: it is the committed output of `bootstrap.py` run on `seed.toe`, not a hand-built file.
+`template.toe` is a regenerated artifact: it is the committed output of `bootstrap.py` run on `seed.toe`, not a hand-built file. The shipped `plugins/aart-clock-td/aart_clock.tox` is exported from the built `/project1/aart_clock` component.
 
 ## Appendix — bridge execution notes
 

@@ -19,26 +19,30 @@ Two consequences drive the architecture:
 
 ### Build pipeline & repo structure
 
-The pipeline is a reproducible chain: **Python build scripts → (executed via the MCP bridge) → `template.toe` + module `.tox` artifacts**, all committed.
+The pipeline is a reproducible chain: **Python build scripts → (executed via the MCP bridge) → `dev/template.toe` + the shipped `aart_clock.tox`**, all committed. The repo is segmented into a `plugins/` directory (TouchDesigner components, vendored and first-party) and a `dev/` directory (the build harness, not shipped).
 
 ```
-build/
-├── bootstrap.py        # reproduces the aart_clock substrate (namespace, module template, conventions) onto the seed
-├── sg/                 # the thin 'sg' build-helper library (extracted in Phase 1 — see Module standard)
-├── sg_clock.py         # per-module build scripts (raw TD API → sg helper once extracted)
-├── sg_phase.py
-└── ...
-seed.toe               # minimal committed seed: ONLY the MCP bridge (mcp_webserver_base.tox)
-template.toe           # committed result of running bootstrap.py on seed.toe — the reproducible base
-tox/                   # committed generated .tox artifacts (the distributable palette)
-docs/                  # usage docs + SEED-RUNBOOK.md (manual steps to rebuild seed.toe)
-USAGE.md               # project-level integration guide (see below)
+plugins/
+├── touchdesigner-mcp-td/      # vendored 3rd-party bridge (mcp_webserver_base.tox + modules/); build-time only
+└── aart-clock-td/             # first-party toolkit plugin
+    ├── build/                 # source of truth
+    │   ├── bootstrap.py       #   constructs the aart_clock namespace + module template onto the seed
+    │   ├── sg/                #   thin 'sg' build-helper library (extracted in Phase 1)
+    │   ├── sg_clock.py        #   per-module build scripts (raw TD API → sg helper once extracted)
+    │   └── …
+    └── aart_clock.tox         # shipped container component — all sg_* modules as sub-components (generated)
+dev/                           # build harness, not shipped
+├── seed.toe                   #   minimal committed seed: ONLY the MCP bridge
+├── template.toe               #   committed result of bootstrap.py on seed.toe — the reproducible base
+└── test-project.toe           #   pixel-art sketch, a real demo consumer of the signals
+docs/SEED-RUNBOOK.md           # the seed/bootstrap boundary + manual steps to rebuild seed.toe
+USAGE.md                       # project-level integration guide (see below)
 ```
 
-- **`seed.toe`** carries only the MCP bridge (whose relative-path/manual-import constraint makes it the one thing not worth scripting). Committed as a trusted minimal binary. It is the one un-scripted link in the chain, so its construction is captured as a committed, followable **`docs/SEED-RUNBOOK.md`** (the manual steps to rebuild the seed from a blank project + the vendored bridge `.tox`). The reproducibility claim is therefore scoped precisely: *reproducible from `seed.toe` + scripts, where `seed.toe` itself is reproducible by the runbook* — not "fully reproducible from text alone."
-- **`bootstrap.py`** reproduces everything else on top of the seed via the bridge — the `/project1/aart_clock` namespace base, the module template scaffold, and the shared conventions. `template.toe` is the committed output of `bootstrap` on `seed`. The exact seed/bootstrap boundary (what must live in the seed vs what bootstrap can place) is settled as the first deliverable of Phase 1, before the "reproducible" exit condition can be checked.
-- Modules are built into the **running project under `/project1/aart_clock`**; the existing pixel-art sketch (`content → pixel_up → out_square`) stays in the project as a real demo *consumer* of the signals.
-- **Both** the build script (source of truth, reviewed via its diff) **and** the generated `.tox` (distributable release artifact) are committed. The `.tox` lets a consumer drop a module into their project without running the build; the script is what we actually review and reproduce from.
+- **`dev/seed.toe`** carries only the MCP bridge (whose relative-path/manual-import constraint makes it the one thing not worth scripting). Committed as a trusted minimal binary. It is the one un-scripted link in the chain, so its construction is captured as a committed, followable **`docs/SEED-RUNBOOK.md`**. The reproducibility claim is therefore scoped precisely: *reproducible from `seed.toe` + scripts, where `seed.toe` itself is reproducible by the runbook* — not "fully reproducible from text alone."
+- **`bootstrap.py`** reproduces everything else on top of the seed via the bridge — the `/project1/aart_clock` namespace base, the module template scaffold, and the shared conventions. `dev/template.toe` is the committed output of `bootstrap` on `seed`. The seed/bootstrap boundary was settled as Phase 1's first deliverable (see `docs/SEED-RUNBOOK.md`): the seed holds only the bridge; everything aart-clock is bridge-constructable.
+- Modules are built into the **running project under `/project1/aart_clock`**; the pixel-art sketch (`content → pixel_up → out_square`, in `dev/test-project.toe`) stays as a real demo *consumer* of the signals.
+- **Packaging: one shipped container.** The `sg_*` family ships as a single **`plugins/aart-clock-td/aart_clock.tox`** holding each module as an internal sub-component (drop it in once; individual modules can still be copied out). **Both** the build scripts (source of truth, reviewed via their diff) **and** the generated `aart_clock.tox` (distributable release artifact) are committed. The scripts are what we review and reproduce from; the `.tox` lets a consumer drop the toolkit in without running the build.
 
 ### Signal language (the shared contract)
 
@@ -97,7 +101,7 @@ The guide is seeded in Phase 1 and completed in Phase 4.
 
 **In (v1 = the 7-module MVP + the reproducible build pipeline):**
 
-- The build pipeline: `seed.toe`, `bootstrap.py`, `template.toe`, the `sg` build-helper library, `tox/` artifact policy.
+- The build pipeline: `dev/seed.toe`, `bootstrap.py`, `dev/template.toe`, the `sg` build-helper library, the shipped `aart_clock.tox` container.
 - Layer 1 — Timing: `sg_clock`, `sg_phase`, `sg_divide`
 - Layer 2 — Generation: `sg_lfo`, `sg_random`
 - Layer 3 — Shaping: `sg_env`, `sg_map`
@@ -162,7 +166,7 @@ The build pipeline, signal language, and module standard, proven by the thinnest
 ### Phase 4 — v1 hardening + packaging
 
 - **`Version` string convention + preset support pass** across all seven modules (resolves two Open questions).
-- Help-text + `docs`/`demo` completeness; **palette packaging** of the `sg_*` `.tox` family in `tox/`.
+- Help-text + `docs`/`demo` completeness; **package the `sg_*` family into the single `plugins/aart-clock-td/aart_clock.tox` container** (each module an internal sub-component).
 - **Reproducibility audit:** rebuild `seed.toe` from `SEED-RUNBOOK.md`, run `bootstrap.py` + all module scripts via the bridge, and confirm the result is **functionally equivalent** — every module's verification assertions pass and both chains run — not byte-identical (TD `.tox`/`.toe` binaries embed timestamps/IDs and won't reproduce byte-for-byte; the build script is the source of truth, the `.tox` a regenerated artifact). This is the proof the pipeline is genuinely reproducible.
 - **Integration guide completion** — both chains finalized as polished walkthroughs; install/quick-reference current with the final API.
 - README reconcile (drop Color, document polarity, Trigger→Pulse).
@@ -219,8 +223,10 @@ Unattended/headless CI (no running GUI) is out of scope for v1 — it needs a di
 - **Build-script-first source of truth.** Each module is a committed Python build script; the `.tox` is a generated artifact. Dissolves externalize-to-text.
 - **Reproducible base:** committed minimal `seed.toe` (MCP bridge only) + `bootstrap.py` → committed `template.toe`. The whole library rebuilds from text + seed.
 - **Build API: raw TD Python first, extract a thin `sg` helper library** on the rule of three (in the Phase 1 foundation).
-- **Artifact policy: commit both** the build script (reviewed source) and the generated `.tox` (distributable artifact).
-- **Build into the running project** under `/project1/aart_clock`; the pixel-art sketch stays as a demo consumer.
+- **Repo segmentation:** `plugins/` holds TD components — `touchdesigner-mcp-td/` (vendored bridge) and `aart-clock-td/` (first-party toolkit, with its `build/` scripts); `dev/` holds the build harness (`seed.toe`, `template.toe`, `test-project.toe`).
+- **Packaging: one shipped container `aart_clock.tox`** holding all `sg_*` modules as sub-components (not a per-module palette).
+- **Artifact policy: commit both** the build scripts (reviewed source) and the generated `aart_clock.tox` (distributable artifact).
+- **Build into the running project** under `/project1/aart_clock`; the pixel-art sketch (`dev/test-project.toe`) stays as a demo consumer.
 - **Verification = hybrid**: live MCP channel assertions for deterministic behavior (pinned frames), manual Trail/Info scopes for stochastic/feel; verification per-phase, not deferred. Unattended/headless CI is future work.
 - **Five core signal types**; bipolar is a polarity convention on Value/Vector (single `value` channel + Polarity param); Color → Future Work; Vector provisional.
 - **Single-frame event type = `Pulse`**, not Trigger; channels `pulse_*`.
@@ -249,3 +255,14 @@ Changes from the prior version:
 - Reproducibility claims scoped honestly (functional equivalence, not byte-identical; seed reproducible by runbook) per the evaluator pass.
 
 All prior decisions (Pulse rename, fat-clock/off-grid-phase seam, five types with bipolar as a polarity convention, vertical-slice phasing, usage docs as a graded deliverable) carry forward unchanged.
+
+### 2026-06-09 — Segment the repo into plugins/ + dev/; ship a single container .tox
+
+**Rationale:** The repo was accreting flat. Segmenting it makes the third-party bridge, the first-party toolkit, and the dev harness distinct, and scales as modules are added.
+
+- Moved the vendored bridge to `plugins/touchdesigner-mcp-td/` (directory moved as a unit; relative `modules/` paths preserved).
+- Added the first-party `plugins/aart-clock-td/` plugin with its `build/` scripts; the toolkit ships as a **single `aart_clock.tox` container** holding all `sg_*` modules as sub-components (supersedes the earlier per-module `tox/` palette assumption).
+- Moved the dev harness to `dev/` (`seed.toe`, `template.toe`, `test-project.toe`).
+- Updated `docs/SEED-RUNBOOK.md` paths accordingly.
+
+This is a structural/packaging change; no signal-language or phasing decisions changed.
