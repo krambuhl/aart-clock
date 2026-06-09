@@ -8,9 +8,10 @@ seam): a free-running phase at an arbitrary Hz rate, decoupled from the transpor
 grid. sg_clock owns beat-synced phase; this owns everything off the grid.
 Idempotent. Raw TD API (pre-sg-helper).
 
+Input (in1): a pulse to align/reset the phase to (e.g. sg_clock's pulse_bar) - this is what
+makes clock -> phase -> map a literal chain. Free-running when nothing is wired.
 Outputs: phase, ramp (alias of phase), pulse_wrap (one-sample pulse at each wrap).
-Params: Rate (Hz), Offset (0..1 phase offset).
-NOTE (v1): free Hz mode only; beat-relative sync + Reset are deferred (see PLAN open items).
+Params: Rate (Hz), Offset (0..1 phase offset), Synctoinput (reset phase on an input pulse).
 """
 
 NS_PATH = '/project1/aart_clock'
@@ -35,6 +36,9 @@ def _add_params(c):
     c.par.Offset.default = 0.0
     c.par.Offset.val = 0.0
     c.par.Offset.normMin, c.par.Offset.normMax = 0.0, 1.0
+    pg.appendToggle('Synctoinput', label='Sync To Input')
+    c.par.Synctoinput.default = True
+    c.par.Synctoinput.val = True
 
 
 def build():
@@ -48,12 +52,18 @@ def build():
     c.color = (0.5, 0.45, 0.3)
     _add_params(c)
 
+    # reset input: a pulse on in1 re-zeros the phase, aligning it to an upstream clock.
+    # this is the chain seam: wire e.g. sg_clock pulse_bar -> sg_phase in1.
+    in1 = c.create('inCHOP', 'in1')
+    reset_expr = "1 if (parent().par.Synctoinput and op('in1').numChans and op('in1')[0] > 0.5) else 0"
+
     # ramp source (0..1); name its channel `phase` directly
     ramp = c.create('lfoCHOP', 'ramp_lfo')
     ramp.par.wavetype = 'ramp'
     ramp.par.frequency.expr = 'parent().par.Rate'
     ramp.par.phase.expr = 'parent().par.Offset'
     ramp.par.channelname = 'phase'
+    ramp.par.reset.expr = reset_expr
 
     # wrap pulse: an LFO 'pulse' type at the same freq/phase fires one sample per cycle
     pulse = c.create('lfoCHOP', 'wrap_lfo')
@@ -61,6 +71,7 @@ def build():
     pulse.par.frequency.expr = 'parent().par.Rate'
     pulse.par.phase.expr = 'parent().par.Offset'
     pulse.par.channelname = 'pulse_wrap'
+    pulse.par.reset.expr = reset_expr
 
     # `ramp` is an alias of `phase` (same value, contract completeness)
     n_ramp = c.create('renameCHOP', 'name_ramp')

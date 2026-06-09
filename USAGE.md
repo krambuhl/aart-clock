@@ -44,11 +44,13 @@ the global timeline).
 - **Outputs:** `beat` / `bar` / `phrase` (counters); `phase_beat` / `phase_bar` / `phase_phrase`
   (0-1 ramps); `pulse_beat` / `pulse_bar` / `pulse_phrase` (one-sample pulses).
 
-### sg_phase — off-grid phase
-A free-running normalized phase at an arbitrary rate, independent of the transport grid (use
-`sg_clock`'s `phase_*` outputs when you want grid-locked phase).
+### sg_phase — off-grid phase (chainable)
+A free-running normalized phase at an arbitrary rate. Free-running on its own, but wire a pulse
+into its **input** to align it to a clock — that's what makes `clock → phase → map` a real chain.
 
-- **Params:** `Rate` (Hz), `Offset` (0-1 phase offset).
+- **Input `in1`:** a pulse (e.g. `sg_clock`'s `pulse_bar`). Each pulse re-zeros the phase, locking
+  its loop to the clock. Leave unwired for pure free-running.
+- **Params:** `Rate` (Hz), `Offset` (0-1 phase offset), `Synctoinput` (reset on input pulse; on by default).
 - **Outputs:** `phase` (0-1), `ramp` (alias of phase), `pulse_wrap` (one-sample pulse each cycle).
 
 ### sg_map — signal shaping
@@ -60,21 +62,21 @@ Remap and shape any Value.
 
 ## Walkthroughs (Phase 1 slice)
 
-The Phase 1 modules compose two ways. (Because `sg_phase` is the *off-grid* source, it runs
-parallel to `sg_clock` rather than downstream of it — so the slice is "clock -> map" and
-"phase -> map", not a single linear chain.)
+**The chain — `sg_clock → sg_phase → sg_map`** (see the live `p1_demo` in `dev/test-project.toe`):
 
-**Drive a value from the beat:**
-1. Drop `sg_clock`. Set `Bpm` to taste, `Play` on.
-2. `Select` CHOP -> pick `phase_bar` from `sg_clock`.
-3. `sg_map`: input the selected channel; set `Outlow`/`Outhigh` to your target range (e.g. a
-   rotation 0-360, or `-1..1` for bipolar modulation). Optionally `Quantize` to step it.
-4. The `value` output now sweeps once per bar, in your range — wire it to any visual parameter.
+1. Drop `sg_clock`. Set `Bpm` (e.g. 120), `Play` on.
+2. `Select` CHOP -> pick `pulse_bar` from `sg_clock/out1`. Wire it into `sg_phase`'s **input** —
+   the phase now resets every bar, locked to the clock.
+3. On `sg_phase`, set `Rate` so the loop matches the bar (at 120 BPM a bar is 2s -> `Rate` 0.5)
+   for a clean one-sweep-per-bar; or pick any rate for polyrhythmic feel against the reset.
+4. `Select` -> pick `phase` from `sg_phase/out1` into `sg_map`. Set `Outlow`/`Outhigh` to your
+   range (e.g. 0-360 for rotation, or `-1..1` for bipolar modulation). Optionally `Quantize`.
+5. `sg_map`'s `value` output is a bar-synced sweep in your range — wire it to any visual parameter.
 
-**Free-running modulation:**
-1. Drop `sg_phase`. Set `Rate` (Hz).
-2. `sg_map` -> shape `phase` into your range.
-3. `value` is a continuous off-grid sweep; `pulse_wrap` fires once per cycle (use for one-shots).
+**Shortcuts off the same spine:**
+- Skip `sg_phase` and feed a `sg_clock` `phase_*` ramp straight into `sg_map` for grid-locked phase.
+- Leave `sg_phase`'s input unwired for free-running modulation (its `pulse_wrap` fires once per cycle,
+  handy for one-shots).
 
 ## Building (developers)
 
