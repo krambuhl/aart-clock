@@ -23,12 +23,17 @@ DEMO = '/project1/p1_demo'
 
 
 def build_chain():
+    """Success-criteria Chain A: sg_clock -> sg_divide -> sg_env -> sg_map.
+
+    The clock's tempo drives sg_divide (which rides the clock's Time COMP); the divided gate
+    fires sg_env; the envelope is shaped by sg_map. A clock-synced rhythmic envelope.
+    """
     ns = op(NS)
     ex = op(DEMO)
     if ex:
         ex.destroy()
     demo = op('/project1').create('baseCOMP', 'p1_demo')
-    demo.comment = 'Phase 1 chain demo: sg_clock -> sg_phase -> sg_map'
+    demo.comment = 'Chain A: sg_clock -> sg_divide -> sg_env -> sg_map'
     demo.color = (0.2, 0.5, 0.5)
     demo.nodeX, demo.nodeY = -300, -700
 
@@ -37,27 +42,33 @@ def build_chain():
         n.nodeX, n.nodeY = x, y
         return n
 
-    clk = cp('sg_clock', -800, 0)
-    ph = cp('sg_phase', -350, 0)
-    ph.par.Rate = 0.5                       # one sweep per bar @120bpm
-    mp = cp('sg_map', 200, 0)
-    mp.par.Outlow, mp.par.Outhigh = 0, 360  # e.g. a rotation range
+    clk = cp('sg_clock', -1000, 0)
+    div = cp('sg_divide', -550, 0)
+    div.par.Clock = '../sg_clock'        # sibling clock in the demo
+    div.par.Division = 1
+    env = cp('sg_env', -100, 0)
+    env.par.Mode = 'ad'                   # percussive: attack+decay per gate, ignores gate length
+    env.par.Attack = 0.01
+    env.par.Decay = 0.4
+    env.par.Sustain = 0.0
+    mp = cp('sg_map', 350, 0)
+    mp.par.Outlow, mp.par.Outhigh = 0.0, 1.0
 
-    # clock pulse_bar -> phase reset input (locks phase to the bar)
-    s1 = demo.create('selectCHOP', 'pick_pulse_bar')
-    s1.nodeX, s1.nodeY = -570, -170
-    s1.par.chop = clk.path + '/out1'
-    s1.par.channames = 'pulse_bar'
-    s1.outputConnectors[0].connect(ph.inputConnectors[0])
+    # divide gate -> env trigger
+    s1 = demo.create('selectCHOP', 'pick_gate')
+    s1.nodeX, s1.nodeY = -320, -170
+    s1.par.chop = div.path + '/out1'
+    s1.par.channames = 'gate'
+    s1.outputConnectors[0].connect(env.inputConnectors[0])
 
-    # phase -> map
-    s2 = demo.create('selectCHOP', 'pick_phase')
-    s2.nodeX, s2.nodeY = -90, -170
-    s2.par.chop = ph.path + '/out1'
-    s2.par.channames = 'phase'
+    # env -> map
+    s2 = demo.create('selectCHOP', 'pick_env')
+    s2.nodeX, s2.nodeY = 130, -170
+    s2.par.chop = env.path + '/out1'
+    s2.par.channames = 'env'
     s2.outputConnectors[0].connect(mp.inputConnectors[0])
 
-    return demo, clk, ph, mp
+    return demo, clk, env, mp
 
 
 def bind_sketch_noise(clk):
@@ -79,13 +90,13 @@ def bind_sketch_noise(clk):
 
 
 def run():
-    demo, clk, ph, mp = build_chain()
+    demo, clk, env, mp = build_chain()
     bound = bind_sketch_noise(clk)
     content = op('/project1/content')
     return {
         'demo': demo.path,
         'nodes': sorted(c.name for c in demo.children),
-        'map_value_deg': round(float(mp.op('out1')['value'].eval()), 1),
+        'map_value': round(float(mp.op('out1')['value'].eval()), 3),
         'noise_bound': bound,
         'noise_tz_expr': content.par.tz.expr if content else None,
         'abstime_left': {p.name: p.expr for p in content.pars() if p.expr and 'abstime' in p.expr.lower()} if content else {},

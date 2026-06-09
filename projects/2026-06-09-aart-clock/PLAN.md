@@ -266,3 +266,13 @@ All prior decisions (Pulse rename, fat-clock/off-grid-phase seam, five types wit
 - Updated `docs/SEED-RUNBOOK.md` paths accordingly.
 
 This is a structural/packaging change; no signal-language or phasing decisions changed.
+
+### 2026-06-09 — Phase 1 + Phase 2 built (clock, phase, divide, env, map)
+
+Built and verified live via the MCP bridge; all on `main`.
+
+- **Phase 1:** `sg_clock` (Time COMP + Beat CHOP, phase math cross-checked), `sg_phase` (off-grid LFO + wrap pulse + reset input for chaining), `sg_map` (remap/clamp/quantize/polarity, exact assertions). Foundation: `bootstrap.py`, the `sg` build-helper, `sg.arrange` layout, `USAGE.md`, `aart_clock.tox` export, reproducible `dev/build_demo.py`.
+- **Phase 2:** `sg_divide` (rides the clock's Time COMP via a `Clock` path param → auto-aligned division; gate via Logic bound; *Swing deferred*), `sg_env` (wraps Trigger CHOP; AR/AD/ADSR/Loop; trigger needs `threshup`/`threshdown` set + a time-sliced input edge). **Chain A** (`clock → divide → env → map`) demonstrated live in `p1_demo` (rhythmic envelope, verified end-to-end).
+- **Visual hookup:** the sketch noiseTOP scroll is driven by the clock (continuous beats), replacing its `absTime` animation — first clock-drives-visual proof.
+
+Remaining for v1: `dev/seed.toe` (manual step), Phase 3 (`sg_lfo`, `sg_random`), Phase 4 (hardening/packaging/`Version`+presets). `sg_phase`/`sg_divide`/`sg_env` carry small deferred items (beat-relative sync, swing) noted in their scripts.

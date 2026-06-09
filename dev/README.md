@@ -23,8 +23,10 @@ the scripts; the `.toe`/`.tox` files are generated. Run order:
    - `plugins/aart-clock-td/build/sg_clock.py`
    - `plugins/aart-clock-td/build/sg_phase.py`
    - `plugins/aart-clock-td/build/sg_map.py`
-3. Run `dev/build_demo.py` — wires the `clock → phase → map` demo from the library modules and
-   (if the pixel sketch is present) drives the noise scroll from the demo clock.
+   - `plugins/aart-clock-td/build/sg_divide.py`  (Phase 2; references sg_clock)
+   - `plugins/aart-clock-td/build/sg_env.py`     (Phase 2)
+3. Run `dev/build_demo.py` — builds Chain A (`clock → divide → env → map`) from the library
+   modules and (if the pixel sketch is present) drives the noise scroll from the demo clock.
 
 ## Running a script through the bridge
 

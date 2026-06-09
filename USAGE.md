@@ -4,8 +4,8 @@ A modular signal toolkit for TouchDesigner. Patch `sg_*` modules together to dri
 with modular-synth concepts — clocks, phases, envelopes, modulation, mapping — without writing
 custom project logic.
 
-> Status: **v1 Phase 1** (foundation). Modules available: `sg_clock`, `sg_phase`, `sg_map`.
-> `sg_divide`, `sg_env`, `sg_lfo`, `sg_random` arrive in Phases 2-3. This guide grows with them.
+> Status: **v1 Phase 2**. Modules available: `sg_clock`, `sg_phase`, `sg_divide`, `sg_env`, `sg_map`.
+> `sg_lfo`, `sg_random` arrive in Phase 3. This guide grows with them.
 
 ## Install
 
@@ -53,6 +53,28 @@ into its **input** to align it to a clock — that's what makes `clock → phase
 - **Params:** `Rate` (Hz), `Offset` (0-1 phase offset), `Synctoinput` (reset on input pulse; on by default).
 - **Outputs:** `phase` (0-1), `ramp` (alias of phase), `pulse_wrap` (one-sample pulse each cycle).
 
+### sg_divide — clock division / multiplication
+Derives a slower or faster pulse/gate/phase from a clock. It rides the referenced clock's Time
+COMP, so it's automatically tempo-locked and phase-aligned — no reset wiring.
+
+- **Params:** `Clock` (path to the `sg_clock` module, default `../sg_clock`), `Division`,
+  `Multiplication` (net period = Division / Multiplication beats), `Offset` (beats), `Gatewidth`
+  (fraction of the period the gate is high).
+- **Outputs:** `phase` (0-1 at the divided rate), `gate` (0/1), `pulse` (one-sample).
+- *v1: Swing not yet implemented (Beat CHOP can't express uneven swing as one param).*
+
+### sg_env — envelope generator
+An ADSR envelope (wraps TD's Trigger CHOP). Feed it a gate or pulse; it outputs a shaped envelope.
+
+- **Input `in1`:** a **time-sliced** gate/pulse (e.g. `sg_clock`'s `pulse_beat`, or `sg_divide`'s
+  `gate`). NOTE: a non-time-sliced Constant won't trigger it — it needs a real signal edge.
+- **Params:** `Attack`, `Decay`, `Release` (seconds), `Sustain` (level 0-1), `Mode`:
+  - **AR** — attack, hold at peak while gated, release on gate-off
+  - **AD** — attack then decay to zero per trigger (ignores gate length); good for percussive plucks
+  - **ADSR** — full envelope
+  - **Loop** — completes and re-triggers every (A+D+R) for a repeating envelope
+- **Output:** `env` (0-1).
+
 ### sg_map — signal shaping
 Remap and shape any Value.
 
@@ -77,6 +99,18 @@ Remap and shape any Value.
 - Skip `sg_phase` and feed a `sg_clock` `phase_*` ramp straight into `sg_map` for grid-locked phase.
 - Leave `sg_phase`'s input unwired for free-running modulation (its `pulse_wrap` fires once per cycle,
   handy for one-shots).
+
+**Chain A — a clock-synced rhythmic envelope** (`sg_clock → sg_divide → sg_env → sg_map`; the live
+`p1_demo` builds this):
+
+1. `sg_clock` — set `Bpm`, `Play` on.
+2. `sg_divide` — set its `Clock` param to the clock (`../sg_clock` if a sibling); set `Division`
+   (e.g. 1 = per beat, 2 = every two beats, 4 = per bar). It's auto-locked to the clock's tempo.
+3. `Select` → `gate` from `sg_divide` → into `sg_env`'s input. Set `sg_env` `Mode` to **AD** with a
+   `Decay` shorter than the beat for a percussive pluck on every division.
+4. `Select` → `env` from `sg_env` → into `sg_map`; shape to your range.
+5. `sg_map`'s `value` is a rhythmic envelope locked to the clock — wire it to brightness, scale,
+   opacity, anything. (Try pointing the noise's transform at it instead of the clock scroll.)
 
 ## Building (developers)
 
