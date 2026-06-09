@@ -5,6 +5,12 @@ Backup/
 *.tox.*.tox
 *.toeBackup
 *.toxBackup
+# Incremental saves (project.1.toe, project.2.toe, ...)
+*.[0-9]*.toe
+*.[0-9]*.tox
+
+# Rendered exports (ProRes masters, transcodes)
+render/
 
 # TouchDesigner local/runtime artifacts
 *.dmp
