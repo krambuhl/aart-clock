@@ -143,4 +143,10 @@ def verify(c, out1):
 
 
 c, out1 = build()
+import sys as _sys
+_bp = '/Users/krambuhl/Sites/aart-clock/plugins/aart-clock-td/build'
+if _bp not in _sys.path:
+    _sys.path.insert(0, _bp)
+import sg as _sg
+_sg.arrange(c)
 result = verify(c, out1)

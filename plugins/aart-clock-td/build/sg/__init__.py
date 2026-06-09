@@ -112,6 +112,47 @@ def help(c, text, name='help'):
     return d
 
 
+def arrange(comp, dx=200, dy=140, x0=0, y0=0):
+    """Tidy a COMP's children into a left-to-right flow by topological depth.
+
+    Flow operators (CHOP/TOP/SOP/MAT) are placed in columns by their longest
+    input-chain depth; rows stagger downward within a column. Non-flow extras
+    (DATs like help/ext, side COMPs like local_time/demo) drop into a lane below.
+    Reproducible: build scripts call this so rebuilds stay clean.
+    """
+    kids = list(comp.children)
+    idset = set(k.id for k in kids)
+    depth = {}
+    visiting = set()
+
+    def _depth(o):
+        if o.id in depth:
+            return depth[o.id]
+        if o.id in visiting:  # cycle guard
+            return 0
+        visiting.add(o.id)
+        ins = [i for i in o.inputs if i and i.id in idset]
+        depth[o.id] = 0 if not ins else 1 + max(_depth(i) for i in ins)
+        visiting.discard(o.id)
+        return depth[o.id]
+
+    flow = [k for k in kids if k.family in ('CHOP', 'TOP', 'SOP', 'MAT')]
+    extras = [k for k in kids if k not in flow]
+
+    cols = {}
+    for k in flow:
+        cols.setdefault(_depth(k), []).append(k)
+    for col in sorted(cols):
+        for row, n in enumerate(cols[col]):
+            n.nodeX = x0 + col * dx
+            n.nodeY = y0 - row * dy
+    lane_y = y0 + dy * 2
+    for i, n in enumerate(extras):
+        n.nodeX = x0 + i * dx
+        n.nodeY = lane_y
+    return depth
+
+
 def errors(c):
     """All node-error strings under c (and c itself). Empty list == clean."""
     out_errs = []
