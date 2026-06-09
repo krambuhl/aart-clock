@@ -68,5 +68,14 @@ Prerequisites: TouchDesigner **099.2023.12480** and the vendored bridge at `plug
 These are gotchas for any script run via the MCP `execute_python_script` path; `bootstrap.py` and the module build scripts account for them.
 
 - **Return values come from a variable named `result`.** The bridge executes the script at module scope and returns the value bound to `result`. `print(...)` output and `return` statements are **not** captured (`return` at module scope is a syntax error). Assign the data you want back to `result`.
+- **Running a committed build file** (so the file on disk is exactly what executes): exec it into a namespace seeded with the current globals (which carry TD's `op`/`project`), then surface its `result`:
+
+  ```python
+  g = dict(globals())
+  exec(open('/abs/path/plugins/aart-clock-td/build/bootstrap.py').read(), g)
+  result = g['result']
+  ```
+
+  A bare `exec(open(...).read())` will run but its `result` is swallowed by the nested scope — pass the namespace and read `g['result']`.
 - **Operator type names are passed as strings** to `create()` (e.g. `create('baseCOMP', 'aart_clock')`); this is the verified-working form through the bridge.
 - The bridge operates on a **running instance**; it is not a headless build. Unattended/headless reproduction is out of scope for v1 (see PLAN.md → Future Work).
