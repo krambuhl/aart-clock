@@ -77,3 +77,40 @@ The walked decision tree behind [PLAN.md](./PLAN.md). One heading per resolved q
 - **Answer (user-initiated):** Ensure the project clearly documents *how the system is used with TouchDesigner projects.*
 - **Resolution:** Usage documentation promoted to a first-class, graded deliverable at two altitudes — per-module `docs`/`demo` and a project-level integration guide (install + signal-language reference + the two chain walkthroughs) — threaded through every phase, seeded in Phase 1, completed in Phase 4.
 - **Rationale:** The original success criterion is that an artist works "without writing custom project logic." That is achievable only if the consumption workflow is documented, so the docs are how the criterion is met and proven — not an afterthought.
+
+## Round 4 — MCP rework (after connecting the TouchDesigner bridge)
+
+The [touchdesigner-mcp](https://github.com/8beeeaaat/touchdesigner-mcp) server was connected to a running TD instance (099.2023.12480) and verified live: create/destroy operators, get/set params, run Python, and read live CHOP channel values (probe LFO read at 0.407). This reframed the whole build/verification model and triggered a `/loom-revise-plan`.
+
+### Build / source-of-truth model
+- **Recommendation:** Build-script-first (each module a committed Python build script run via MCP; `.tox` generated).
+- **Answer:** Build-script-first — *and* a core `template.toe` we can repeatedly reproduce.
+- **Rationale:** The bridge proved networks can be constructed programmatically, so the diffable Python script becomes the source of truth and the whole base project is reproducible. Dissolves the externalize-to-text open question.
+
+### Verification approach
+- **Recommendation:** Hybrid — live MCP assertions for deterministic math, manual scopes for stochastic/feel.
+- **Answer:** Hybrid: assert + scope.
+- **Rationale:** Live channel reads work, but time-slicing means a free read drifts per cook; deterministic assertions pin the frame, feel-based signals stay eyeballed. Verification moves into every phase.
+
+### `.tox` artifact policy
+- **Recommendation:** Commit both (script source + `.tox` artifact).
+- **Answer:** Commit both.
+- **Rationale:** The script is the reviewed source; the committed `.tox` lets consumers drop a module in without running the build — appropriate for a distributable palette.
+
+### Dev topology
+- **Recommendation:** Build into the running project under `/project1/aart_clock`; pixel sketch stays as a demo consumer.
+- **Answer:** Into the running project.
+- **Rationale:** Uses what's live; build-script-first makes the dev `.toe` reproducible/disposable anyway.
+
+### Build API abstraction
+- **Recommendation:** Raw TD Python API first, extract a thin `sg` helper on the rule of three.
+- **Answer:** Raw API first, extract helper.
+- **Rationale:** Avoids abstracting before 2–3 modules reveal the real shared shape; matches the rule-of-three / don't-over-engineer philosophy.
+
+### `template.toe` reproducibility
+- **Recommendation:** Bootstrap on a bridged seed — commit a minimal seed carrying only the MCP bridge; `bootstrap.py` reproduces everything else.
+- **Answer:** Bootstrap on a bridged seed.
+- **Rationale:** Reproducible without fighting the bridge's relative-path/manual-import constraint. (Evaluator pass then required scoping the claim: the seed is reproducible via `docs/SEED-RUNBOOK.md`, and the seed/bootstrap boundary is Phase 1's first gated deliverable.)
+
+### Evaluator-driven corrections (post-synthesis)
+The contract-fit evaluator flagged the revision for over-claiming reproducibility. Fixes folded in before commit: `SEED-RUNBOOK.md` makes the seed reproducible-by-runbook; the seed/bootstrap boundary became Phase 1's first gated deliverable (was an open question gating an uncheckable exit); the Phase 4 audit asserts functional equivalence, not byte-identical artifacts; manual scopes got explicit pass criteria. The evaluator also (correctly) caught that RESEARCH.md had vanished — which surfaced an out-of-band `git reset` that had wiped the committed loom work; recovered from orphaned commit 385c8aa.
