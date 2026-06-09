@@ -1,0 +1,19 @@
+# TouchDesigner
+# Backup files written next to .toe/.tox projects
+Backup/
+*.toe.*.toe
+*.tox.*.tox
+*.toeBackup
+*.toxBackup
+
+# TouchDesigner local/runtime artifacts
+*.dmp
+*.log
+local/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
