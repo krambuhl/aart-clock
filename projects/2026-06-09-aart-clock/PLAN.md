@@ -276,3 +276,11 @@ Built and verified live via the MCP bridge; all on `main`.
 - **Visual hookup:** the sketch noiseTOP scroll is driven by the clock (continuous beats), replacing its `absTime` animation — first clock-drives-visual proof.
 
 Remaining for v1: `dev/seed.toe` (manual step), Phase 3 (`sg_lfo`, `sg_random`), Phase 4 (hardening/packaging/`Version`+presets). `sg_phase`/`sg_divide`/`sg_env` carry small deferred items (beat-relative sync, swing) noted in their scripts.
+
+### 2026-06-16 — Phase 3 built; MVP achieved (all 7 modules)
+
+- `sg_lfo` — periodic oscillator (sine/triangle/saw/square) on the Polarity convention, phase + wrap, reset-input sync. **Design refinement:** periodic shapes only; Random Hold/Smooth (plan-listed under sg_lfo) are owned by `sg_random` to avoid duplicating the random concern across modules.
+- `sg_random` — White Noise / Random Walk / Brownian via the Noise CHOP, deterministic `Seed`, Rate-driven, Polarity. **Chaos deferred** (needs a stateful Python logistic map).
+- **Chain B** (`sg_lfo → sg_map`) verified live (lfo 0.024 → map 2.45 at ×100). With Chain A already live, **both success-criteria chains run — MVP achieved.** `aart_clock.tox` now ships all 7 modules + template.
+
+Deferred to Phase 4 / fast-follow: `dev/seed.toe`+`template.toe` (manual seed step), Chaos mode, `sg_divide` swing, `sg_phase`/`sg_lfo` beat-relative rate sync, `Version`/preset pass, packaging polish.

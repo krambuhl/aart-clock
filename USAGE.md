@@ -4,8 +4,9 @@ A modular signal toolkit for TouchDesigner. Patch `sg_*` modules together to dri
 with modular-synth concepts — clocks, phases, envelopes, modulation, mapping — without writing
 custom project logic.
 
-> Status: **v1 Phase 2**. Modules available: `sg_clock`, `sg_phase`, `sg_divide`, `sg_env`, `sg_map`.
-> `sg_lfo`, `sg_random` arrive in Phase 3. This guide grows with them.
+> Status: **v1 MVP complete** (Phase 3). All seven modules available: `sg_clock`, `sg_phase`,
+> `sg_divide`, `sg_lfo`, `sg_random`, `sg_env`, `sg_map`. Remaining for v1: Phase 4 hardening
+> (presets, `Version`, packaging polish).
 
 ## Install
 
@@ -52,6 +53,23 @@ into its **input** to align it to a clock — that's what makes `clock → phase
   its loop to the clock. Leave unwired for pure free-running.
 - **Params:** `Rate` (Hz), `Offset` (0-1 phase offset), `Synctoinput` (reset on input pulse; on by default).
 - **Outputs:** `phase` (0-1), `ramp` (alias of phase), `pulse_wrap` (one-sample pulse each cycle).
+
+### sg_lfo — periodic oscillator
+A continuous LFO. Sine / Triangle / Saw / Square, on the Polarity convention, with a phase + wrap
+pulse and a reset input for clock-sync.
+
+- **Input `in1`:** a pulse to reset/align the phase (e.g. `sg_clock` `pulse_bar`). Free-running if unwired.
+- **Params:** `Shape`, `Rate` (Hz), `Offset` (0-1 phase), `Polarity` (unipolar/bipolar), `Synctoinput`.
+- **Outputs:** `value` (in the Polarity range), `phase` (0-1), `pulse_wrap`.
+- *For random modulation (random hold/smooth), use `sg_random` — see below.*
+
+### sg_random — randomized source
+Noise-based modulation with a deterministic seed.
+
+- **Params:** `Mode` (White Noise / Random Walk / Brownian), `Seed` (same seed → same sequence),
+  `Rate` (Hz, how fast it varies), `Polarity`.
+- **Output:** `value` (Polarity range).
+- *v1: Chaos mode deferred (needs a stateful logistic map).*
 
 ### sg_divide — clock division / multiplication
 Derives a slower or faster pulse/gate/phase from a clock. It rides the referenced clock's Time
@@ -111,6 +129,13 @@ Remap and shape any Value.
 4. `Select` → `env` from `sg_env` → into `sg_map`; shape to your range.
 5. `sg_map`'s `value` is a rhythmic envelope locked to the clock — wire it to brightness, scale,
    opacity, anything. (Try pointing the noise's transform at it instead of the clock scroll.)
+
+**Chain B — free modulation** (`sg_lfo → sg_map`, or `sg_random → sg_map`):
+
+1. Drop `sg_lfo` (set `Shape`, `Rate`) or `sg_random` (set `Mode`, `Seed`, `Rate`).
+2. `Select` → `value` → into `sg_map`; shape to your range / `Quantize` for stepped motion.
+3. `value` is continuous modulation — wire it anywhere. Sync the LFO to the beat by feeding a
+   clock pulse into its input, or leave it free-running.
 
 ## Building (developers)
 
