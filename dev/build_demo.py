@@ -43,6 +43,16 @@ def build_chain():
         return n
 
     clk = cp('sg_clock', -1000, 0)
+    clk.par.opshortcut = 'clock'   # op.clock -> the module (params)
+
+    # clock bus: short, direct-indexable channel handle -> op('/project1/clk')['beat']
+    bus = op('/project1/clk') or op('/project1').create('selectCHOP', 'clk')
+    bus.par.chop = clk.path + '/out1'
+    bus.par.channames = '*'
+    bus.nodeX, bus.nodeY = 0, 250
+    bus.color = (0.55, 0.3, 0.3)
+    bus.comment = 'clock bus - op("/project1/clk")["beat"]'
+
     div = cp('sg_divide', -550, 0)
     div.par.Clock = '../sg_clock'        # sibling clock in the demo
     div.par.Division = 1
@@ -80,8 +90,8 @@ def bind_sketch_noise(clk):
     content = op('/project1/content')
     if not content:
         return False
-    co = clk.path + '/out1'
-    content.par.tz.expr = "(op('%s')['beat'] + op('%s')['phase_beat']) * 0.025" % (co, co)
+    # use the short clock-bus handle (op('/project1/clk')) instead of the full module path
+    content.par.tz.expr = "(op('/project1/clk')['beat'] + op('/project1/clk')['phase_beat']) * 0.025"
     # clear a stray parallel driver on t4d (reset to constant via a known-constant par's mode)
     if content.par.t4d.expr:
         content.par.t4d.mode = content.par.tx.mode

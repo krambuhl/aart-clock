@@ -137,6 +137,18 @@ Remap and shape any Value.
 3. `value` is continuous modulation — wire it anywhere. Sync the LFO to the beat by feeding a
    clock pulse into its input, or leave it free-running.
 
+## Referencing signals concisely
+
+Typing `op('/project1/p1_demo/sg_clock/out1')['beat']` in every expression gets old. Two shortcuts:
+
+- **Clock bus** — a `Select` CHOP named `clk` at `/project1` mirrors all the clock's channels, so you
+  index it directly: `op('/project1/clk')['beat']`, `op('/project1/clk')['phase_bar']`. (Make your own
+  bus for any signal you reference a lot — a `Null`/`Select` CHOP at a short path is a CHOP, so the
+  `['channel']` access just works. TD can't give a *CHOP* a global `op.name` shortcut, only COMPs.)
+- **Module shortcut** — the demo clock has a Global OP Shortcut, so `op.clock` reaches the module
+  from anywhere (handy for params: `op.clock.par.Bpm`). Set one via a COMP's Common page →
+  *Global OP Shortcut*.
+
 ## Building (developers)
 
 aart-clock is built **build-script-first** through the TouchDesigner MCP bridge. The Python build
