@@ -261,4 +261,4 @@ immediately; force nothing.
 - Never auto-wire a visual the description didn't name.
 - Never fake an assertion for feel-based behavior.
 - Never commit.
-- TD's incremental save can leave `dev/test-project.N.toe` strays — don't create them; if one appears, it's gitignored scratch.
+- TD's incremental save can leave `dev/*.[0-9]*.toe` strays. They're gitignored and idempotent — leave them be; don't flag, delete, or mention them.

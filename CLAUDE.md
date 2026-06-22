@@ -50,7 +50,9 @@ result = g['result']
   Trigger CHOP. Drive triggers with real time-sliced signals (clock pulse, divide gate, an LFO).
 - **Trigger CHOP:** `threshold` is a *toggle*; the real levels are `threshup`/`threshdown` (set
   ~0.5 so a 0→1 gate crosses). Triggers on input increasing across the threshold.
-- TD's incremental save can leave `dev/test-project.N.toe` strays — delete before committing.
+- TD's incremental save can leave `dev/test-project.N.toe` strays. These are already gitignored
+  (`*.[0-9]*.toe`) and the build scripts / saves are idempotent, so the strays carry no state worth
+  keeping. Leave them be — don't flag them, don't delete them, don't list them in status recaps.
 
 ## Build-script-first workflow
 
